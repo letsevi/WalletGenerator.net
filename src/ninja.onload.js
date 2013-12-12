@@ -1,3 +1,34 @@
+// change language
+if (ninja.getQueryString()["culture"] != undefined) {
+	ninja.translator.translate(ninja.getQueryString()["culture"]);
+} else {
+	ninja.translator.autodetectTranslation();
+}
+if (ninja.getQueryString()["showseedpool"] == "true" || ninja.getQueryString()["showseedpool"] == "1") {
+	document.getElementById("seedpoolarea").style.display = "block";
+}
+// change currency
+var currency = ninja.getQueryString()["currency"] || "bitcoin";
+currency = currency.toLowerCase();
+for(i = 0; i < janin.currencies.length; i++) {
+	if (janin.currencies[i].name.toLowerCase() == currency)
+		janin.currency.useCurrency(i);
+}
+// Reset title if no currency is choosen
+if(ninja.getQueryString()["currency"] == null) {
+    document.title = ninja.translator.get("defaultTitle");
+}
+// populate currency dropdown list
+var select = document.getElementById("currency");
+var options = "";
+for(i = 0; i < janin.currencies.length; i++) {
+    options += "<option value='"+i+"'";
+	if(janin.currencies[i].name == janin.currency.name())
+		options += " selected='selected'";
+	options += ">"+janin.currencies[i].name+"</option>";
+}
+select.innerHTML = options;
+
 // run unit tests
 if (ninja.getQueryString()["unittests"] == "true" || ninja.getQueryString()["unittests"] == "1") {
 	ninja.unitTests.runSynchronousTests();
@@ -7,19 +38,50 @@ if (ninja.getQueryString()["unittests"] == "true" || ninja.getQueryString()["uni
 if (ninja.getQueryString()["asyncunittests"] == "true" || ninja.getQueryString()["asyncunittests"] == "1") {
 	ninja.unitTests.runAsynchronousTests();
 }
-// change language
-if (ninja.getQueryString()["culture"] != undefined) {
-	ninja.translator.translate(ninja.getQueryString()["culture"]);
+// Extract i18n
+if (ninja.getQueryString()["i18nextract"]) {
+    var culture = ninja.getQueryString()["i18nextract"];
+    var div = document.createElement("div");
+    div.innerHTML = "<h3>i18n</h3>";
+    div.setAttribute("style", "text-align: center");
+    var elem = document.createElement("textarea");
+    elem.setAttribute("rows", "30");
+    elem.setAttribute("style", "width: 99%");
+    elem.setAttribute("wrap", "off");
+    
+    a=document.getElementsByClassName("i18n");    
+    
+    var i18n = "\"" + culture + "\": {\n";
+    for(x=0; x<a.length; x++) {
+        i18n += "\t";
+        i18n += "\"" + a[x].id + "\": \"";
+        if(ninja.translator.translations[culture] && ninja.translator.translations[culture][a[x].id])
+            i18n += cleani18n(ninja.translator.translations[culture][a[x].id]);
+        else
+            i18n += "(ENGLISH)" + cleani18n(a[x].innerHTML);
+        i18n += "\",\n";
+    }
+    for(x=0; x<ninja.translator.staticID.length; x++) {
+        i18n += "\t";
+        i18n += "\"" + ninja.translator.staticID[x] + "\": \"";
+        if(ninja.translator.translations[culture] && ninja.translator.translations[culture][ninja.translator.staticID[x]])
+            i18n += cleani18n(ninja.translator.translations[culture][ninja.translator.staticID[x]]);
+        else
+            i18n += "(ENGLISH)" + cleani18n(ninja.translator.translations["en"][ninja.translator.staticID[x]]);
+        i18n += "\",\n";
+    }
+    
+    i18n += "},"
+    
+    elem.innerHTML = i18n;
+    div.appendChild(elem);
+    document.body.appendChild(div);
 }
-// testnet, check if testnet edition should be activated
-if (ninja.getQueryString()["testnet"] == "true" || ninja.getQueryString()["testnet"] == "1") {
-	document.getElementById("testnet").innerHTML = ninja.translator.get("testneteditionactivated");
-	document.getElementById("testnet").style.display = "block";
-	document.getElementById("detailwifprefix").innerHTML = "'9'";
-	document.getElementById("detailcompwifprefix").innerHTML = "'c'";
-	Bitcoin.Address.networkVersion = 0x6F; // testnet
-	Bitcoin.ECKey.privateKeyPrefix = 0xEF; // testnet
-	ninja.testnetMode = true;
+function cleani18n(string) {
+    return string.replace(/^\s\s*/, '').replace(/\s\s*$/, '') // remove leading and trailing space
+                .replace(/\s*\n+\s*/g, '\\n') // replace new line
+                .replace(/"/g, '\\"');
 }
-// if users does not move mouse after random amount of time then generate the key anyway.
-setTimeout(ninja.seeder.forceGenerate, ninja.seeder.seedLimit * 20);
+
+ninja.envSecurityCheck();
+ninja.browserSecurityCheck();
